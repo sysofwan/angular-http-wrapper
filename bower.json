@@ -1,10 +1,19 @@
 {
   "name": "angular-http-wrapper",
   "version": "0.0.1",
+  "main": "dist/angular-http-wrapper.js",
+  "ignore": [
+  	".*",
+  	"Gruntfile.js",
+  	"karma.conf.js",
+  	"test",
+  	"src",
+  	"package.json"
+  ],
   "dependencies": {
+  	"angular": "1.2.16"
   },
   "devDependencies": {
-    "angular": "1.2.16",
     "angular-mocks": "1.2.16"
   }
 }
