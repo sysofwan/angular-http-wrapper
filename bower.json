@@ -4,7 +4,7 @@
   "dependencies": {
   },
   "devDependencies": {
-    "angular": "latest",
-    "angular-mocks": "latest"
+    "angular": "1.2.16",
+    "angular-mocks": "1.2.16"
   }
 }
