@@ -1,4 +1,4 @@
-# httpWrapper
+# angular-http-wrapper
 
 
 
