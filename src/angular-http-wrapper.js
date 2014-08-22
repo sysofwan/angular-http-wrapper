@@ -4,7 +4,7 @@ angular.module('sysofwan.httpWrapper', [])
 
 .factory('httpWrapper', function($http) {
 
-  var encodeUriSegment = function (val) {
+  var encodeUriSegment = function(val) {
     return encodeURIComponent(val).
     replace(/%40/gi, '@').
     replace(/%3A/gi, ':').
@@ -19,7 +19,7 @@ angular.module('sysofwan.httpWrapper', [])
   // Returns actual url and modifies param object to actual param
   var isUrlParam = function(param, templateUrl) {
     return !(new RegExp('^\\d+$').test(param)) && param &&
-    (new RegExp('(^|[^\\\\]):' + param + '(\\W|$)').test(templateUrl));
+      (new RegExp('(^|[^\\\\]):' + param + '(\\W|$)').test(templateUrl));
   };
 
   var replaceTokens = function(url) {
@@ -42,12 +42,12 @@ angular.module('sysofwan.httpWrapper', [])
     angular.forEach(urlParamsKeys, function(key) {
       var val = params[key];
       if (angular.isDefined(val) && val !== null) {
-        templateUrl = templateUrl.replace(new RegExp(':' + key + '(\\W|$)', 'g'), function (match, p1) {
+        templateUrl = templateUrl.replace(new RegExp(':' + key + '(\\W|$)', 'g'), function(match, p1) {
           return encodeUriSegment(val) + p1;
         });
         delete params[key];
       } else {
-        templateUrl = templateUrl.replace(new RegExp('(\/?):' + key + '(\\W|$)', 'g'), function (match,
+        templateUrl = templateUrl.replace(new RegExp('(\/?):' + key + '(\\W|$)', 'g'), function(match,
           leadingSlashes, tail) {
           if (tail.charAt(0) === '/') {
             return tail;
@@ -71,13 +71,15 @@ angular.module('sysofwan.httpWrapper', [])
     return angular.extend(angular.copy(defaultParams), params);
   };
 
-  var getGetConfig = function(params, defaultConfig, config) {
+  var getParamConfig = function(params, defaultConfig, config) {
     defaultConfig = defaultConfig || {};
     config = config || {};
-    return angular.extend(angular.copy(defaultConfig), config, {params: params});
+    return angular.extend(angular.copy(defaultConfig), config, {
+      params: params
+    });
   };
 
-  var getPostConfig = function(defaultConfig, config) {
+  var getDataConfig = function(defaultConfig, config) {
     defaultConfig = defaultConfig || {};
     config = config || {};
     return angular.extend(angular.copy(defaultConfig), config);
@@ -87,32 +89,46 @@ angular.module('sysofwan.httpWrapper', [])
     return response.data;
   };
 
+  var dataRequest = function(httpFunc) {
+    return function(url, defaultData, defaultConfig) {
+      return function(data, config) {
+        data = getParams(defaultData, data);
+        var actualUrl = toActualParamsAndUrl(url, data);
+        config = getDataConfig(defaultConfig, config);
+        return httpFunc(actualUrl, data, config)
+          .then(handleSuccess);
+      };
+    };
+  };
+
   return {
     get: function(url, defaultParams, defaultConfig) {
       return function(params, config) {
         params = getParams(defaultParams, params);
         var actualUrl = toActualParamsAndUrl(url, params);
-        config = getGetConfig(params, defaultConfig, config);
+        config = getParamConfig(params, defaultConfig, config);
         return $http.get(actualUrl, config)
-        .then(handleSuccess);
+          .then(handleSuccess);
       };
     },
-    post: function(url, defaultData, defaultConfig) {
-      return function(data, config) {
-        data = getParams(defaultData, data);
-        var actualUrl = toActualParamsAndUrl(url, data);
-        config = getPostConfig(defaultConfig, config);
-        return $http.post(actualUrl, data, config)
-        .then(handleSuccess);
+    delete: function(url, defaultConfig) {
+      return function(params, config) {
+        var actualUrl = toActualParamsAndUrl(url, params);
+        config = getDataConfig(defaultConfig, config);
+        return $http.delete(actualUrl, config)
+          .then(handleSuccess);
       };
     },
+    post: dataRequest($http.post),
+    put: dataRequest($http.post),
+    patch: dataRequest($http.post),
     partial: function(requestFunc, addParams, addConfig) {
       addParams = addParams || {};
       addConfig = addConfig || {};
       return function(params, config) {
         params = params || {};
         config = config || {};
-        
+
         params = angular.extend(angular.copy(addParams), params);
         config = angular.extend(angular.copy(addConfig), config);
         return requestFunc(params, config);
