@@ -111,6 +111,7 @@ angular.module('sysofwan.httpWrapper', [])
           .then(handleSuccess);
       };
     },
+    
     delete: function(url, defaultConfig) {
       return function(params, config) {
         var actualUrl = toActualParamsAndUrl(url, params);
@@ -119,9 +120,13 @@ angular.module('sysofwan.httpWrapper', [])
           .then(handleSuccess);
       };
     },
+    
     post: dataRequest($http.post),
+    
     put: dataRequest($http.post),
+    
     patch: dataRequest($http.post),
+    
     partial: function(requestFunc, addParams, addConfig) {
       addParams = addParams || {};
       addConfig = addConfig || {};
@@ -132,6 +137,12 @@ angular.module('sysofwan.httpWrapper', [])
         params = angular.extend(angular.copy(addParams), params);
         config = angular.extend(angular.copy(addConfig), config);
         return requestFunc(params, config);
+      };
+    },
+
+    modifyResults: function(requestFunc, modifyFunc) {
+      return function(params, config) {
+        return requestFunc(params, config).then(modifyFunc);
       };
     }
   };
