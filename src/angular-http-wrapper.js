@@ -149,9 +149,11 @@ angular.module('sysofwan.httpWrapper', [])
     },
 
     modifyResults: function(requestFunc, modifyFunc) {
-      return function(params, config) {
+      var func = function(params, config) {
         return requestFunc(params, config).then(modifyFunc);
       };
+      func.url = requestFunc.url;
+      return func;
     }
   };
 

@@ -397,6 +397,10 @@ describe('Module: httpWrapper', function() {
     req = httpWrapper.partial(req, {message: 'test'});
     expect(req.url === '/test2');
 
+    req = httpWrapper.modifyResults(req, function(data) {
+      return 'i changed';
+    });
+    expect(req.url === '/test2');
 
   });
 
