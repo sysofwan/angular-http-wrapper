@@ -387,4 +387,17 @@ describe('Module: httpWrapper', function() {
     $httpBackend.flush();
   });
 
+  it('should give url on url attribute', function() {
+    var req = httpWrapper.get('/test');
+    expect(req.url === '/test');
+
+    req = httpWrapper.post('/test2');
+    expect(req.url === '/test2');
+
+    req = httpWrapper.partial(req, {message: 'test'});
+    expect(req.url === '/test2');
+
+
+  });
+
 });

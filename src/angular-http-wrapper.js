@@ -91,34 +91,40 @@ angular.module('sysofwan.httpWrapper', [])
 
   var dataRequest = function(httpFunc) {
     return function(url, defaultData, defaultConfig) {
-      return function(data, config) {
+      var func = function(data, config) {
         data = getParams(defaultData, data);
         var actualUrl = toActualParamsAndUrl(url, data);
         config = getDataConfig(defaultConfig, config);
         return httpFunc(actualUrl, data, config)
           .then(handleSuccess);
       };
+      func.url = url;
+      return func;
     };
   };
 
   return {
     get: function(url, defaultParams, defaultConfig) {
-      return function(params, config) {
+      var func = function(params, config) {
         params = getParams(defaultParams, params);
         var actualUrl = toActualParamsAndUrl(url, params);
         config = getParamConfig(params, defaultConfig, config);
         return $http.get(actualUrl, config)
           .then(handleSuccess);
       };
+      func.url = url;
+      return func;
     },
     
     delete: function(url, defaultConfig) {
-      return function(params, config) {
+      var func = function(params, config) {
         var actualUrl = toActualParamsAndUrl(url, params);
         config = getDataConfig(defaultConfig, config);
         return $http.delete(actualUrl, config)
           .then(handleSuccess);
       };
+      func.url = url;
+      return func;
     },
     
     post: dataRequest($http.post),
@@ -130,7 +136,7 @@ angular.module('sysofwan.httpWrapper', [])
     partial: function(requestFunc, addParams, addConfig) {
       addParams = addParams || {};
       addConfig = addConfig || {};
-      return function(params, config) {
+      var func = function(params, config) {
         params = params || {};
         config = config || {};
 
@@ -138,6 +144,8 @@ angular.module('sysofwan.httpWrapper', [])
         config = angular.extend(angular.copy(addConfig), config);
         return requestFunc(params, config);
       };
+      func.url = requestFunc.url;
+      return func;
     },
 
     modifyResults: function(requestFunc, modifyFunc) {
