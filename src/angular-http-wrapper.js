@@ -68,13 +68,13 @@ angular.module('sysofwan.httpWrapper', [])
   var getParams = function(defaultParams, params) {
     defaultParams = defaultParams || {};
     params = params || {};
-    return angular.extend(angular.copy(defaultParams), params);
+    return angular.extend({}, defaultParams, params);
   };
 
   var getParamConfig = function(params, defaultConfig, config) {
     defaultConfig = defaultConfig || {};
     config = config || {};
-    return angular.extend(angular.copy(defaultConfig), config, {
+    return angular.extend({}, defaultConfig, config, {
       params: params
     });
   };
@@ -82,7 +82,7 @@ angular.module('sysofwan.httpWrapper', [])
   var getDataConfig = function(defaultConfig, config) {
     defaultConfig = defaultConfig || {};
     config = config || {};
-    return angular.extend(angular.copy(defaultConfig), config);
+    return angular.extend({}, defaultConfig, config);
   };
 
   var handleSuccess = function(response) {
@@ -98,7 +98,10 @@ angular.module('sysofwan.httpWrapper', [])
         return httpFunc(actualUrl, data, config)
           .then(handleSuccess);
       };
-      func.url = url;
+      func.url = function(params) {
+        params = getParams(params, defaultData);
+        return toActualParamsAndUrl(url, params);
+      };
       return func;
     };
   };
@@ -112,26 +115,20 @@ angular.module('sysofwan.httpWrapper', [])
         return $http.get(actualUrl, config)
           .then(handleSuccess);
       };
-      func.url = url;
+      func.url = function(params) {
+        params = getParams(params, defaultParams);
+        return toActualParamsAndUrl(url, params);
+      };
       return func;
     },
     
-    delete: function(url, defaultConfig) {
-      var func = function(params, config) {
-        var actualUrl = toActualParamsAndUrl(url, params);
-        config = getDataConfig(defaultConfig, config);
-        return $http.delete(actualUrl, config)
-          .then(handleSuccess);
-      };
-      func.url = url;
-      return func;
-    },
+    delete: dataRequest($http.delete),
     
     post: dataRequest($http.post),
     
-    put: dataRequest($http.post),
+    put: dataRequest($http.put),
     
-    patch: dataRequest($http.post),
+    patch: dataRequest($http.patch),
     
     partial: function(requestFunc, addParams, addConfig) {
       addParams = addParams || {};
@@ -144,7 +141,10 @@ angular.module('sysofwan.httpWrapper', [])
         config = angular.extend(angular.copy(addConfig), config);
         return requestFunc(params, config);
       };
-      func.url = requestFunc.url;
+      func.url = function(params) {
+        params = getParams(params, addParams);
+        return requestFunc.url(params);
+      };
       return func;
     },
 
@@ -152,7 +152,9 @@ angular.module('sysofwan.httpWrapper', [])
       var func = function(params, config) {
         return requestFunc(params, config).then(modifyFunc);
       };
-      func.url = requestFunc.url;
+      func.url = function(params) {
+        return requestFunc.url(params);
+      };
       return func;
     }
   };

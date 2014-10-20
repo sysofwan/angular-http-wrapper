@@ -387,7 +387,7 @@ describe('Module: httpWrapper', function() {
     $httpBackend.flush();
   });
 
-  it('should give url on url attribute', function() {
+  it('should give correct url on url method', function() {
     var req = httpWrapper.get('/test');
     expect(req.url === '/test');
 
@@ -401,6 +401,23 @@ describe('Module: httpWrapper', function() {
       return 'i changed';
     });
     expect(req.url === '/test2');
+
+    req = httpWrapper.get('/test/:message');
+    req = httpWrapper.partial(req, {message: 'test'});
+    expect(req.url === '/test/test');
+
+    req = httpWrapper.get('/test/:message1/:message2');
+    req = httpWrapper.partial(req, {message1: 'test1', message2:'test2'});
+    req = httpWrapper.partial(req, {message2:'test3'});
+    expect(req.url === '/test/test1/test3');
+
+    req = httpWrapper.modifyResults(req, function(data) {
+      return 'i changed';
+    });
+    expect(req.url === '/test/test1/test3');
+
+    req = httpWrapper.partial(req, {message2:'test4'});
+    expect(req.url === '/test/test1/test4');
 
   });
 
