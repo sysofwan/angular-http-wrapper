@@ -19,7 +19,7 @@ angular.module('sysofwan.httpWrapper', [])
   // Returns actual url and modifies param object to actual param
   var isUrlParam = function(param, templateUrl) {
     return !(new RegExp('^\\d+$').test(param)) && param &&
-      (new RegExp('(^|[^\\\\]):' + param + '(\\W|$)').test(templateUrl));
+    (new RegExp('(^|[^\\\\]):' + param + '(\\W|$)').test(templateUrl));
   };
 
   var replaceTokens = function(url) {
@@ -71,10 +71,9 @@ angular.module('sysofwan.httpWrapper', [])
     return angular.extend({}, defaultParams, params);
   };
 
-  var getParamConfig = function(params, defaultConfig, config) {
-    defaultConfig = defaultConfig || {};
+  var getParamConfig = function(params, config) {
     config = config || {};
-    return angular.extend({}, defaultConfig, config, {
+    return angular.extend({}, config, {
       params: params
     });
   };
@@ -89,74 +88,101 @@ angular.module('sysofwan.httpWrapper', [])
     return response.data;
   };
 
+  var hashFunc = function(str) {
+    var hash = 0, i, chr, len;
+    if (str.length === 0) return hash;
+    for (i = 0, len = str.length; i < len; i++) {
+      chr   = str.charCodeAt(i);
+      hash  = ((hash * 31) + chr) % 4e+9;
+    }
+    return hash;
+  };
+
+  var createRequestFunc = function createRequestFunc(reqFunc, params, config, modifiers) {
+    params = params || {};
+    config = config || {};
+    modifiers = modifiers || [];
+    var func = function(newparams, newconfig) {
+      newparams = angular.extend({}, params, newparams);
+      newconfig = angular.extend({}, config, newconfig);
+      return reqFunc(newparams, newconfig).then(function(result) {
+        angular.forEach(modifiers, function(func) {
+          result = func(result);
+        });
+        return result;
+      });
+    };
+
+    func.modify = function(modifier) {
+      return createRequestFunc(reqFunc, params, config, modifiers.concat(modifier));
+    };
+
+    func.partial = function(addParams, addConfig) {
+      addParams = addParams || {};
+      addConfig = addConfig || {};
+      addParams = angular.extend({}, params, addParams);
+      addConfig = angular.extend({}, config, addConfig);
+      return createRequestFunc(reqFunc, addParams, addConfig, modifiers);
+    };
+    func.url = function() {
+      return reqFunc.url(params, config);
+    };
+    func.hash = function() {
+      var str = this.url();
+      angular.forEach(modifiers, function(fn) {
+        str += fn.toString();
+      });
+      console.log(str);
+      return hashFunc(str);
+    };
+    return func;
+  };
+
+  var getRequest = function(url, defaultParams, defaultConfig) {
+    var func = function(params, config) {
+      params = params || {};
+      var actualUrl = toActualParamsAndUrl(url, params);
+      config = getParamConfig(params, config);
+      return $http.get(actualUrl, config)
+      .then(handleSuccess);
+    };
+    func.url = function(params) {
+      params = angular.copy(params);
+      return toActualParamsAndUrl(url, params);
+    };
+
+    return createRequestFunc(func, defaultParams, defaultConfig);
+  };
+
+
   var dataRequest = function(httpFunc) {
-    return function(url, defaultData, defaultConfig) {
+    return function(url, defaultParams, defaultConfig) {
       var func = function(data, config) {
-        data = getParams(defaultData, data);
+        data = data || {};
+        config = config || {};
         var actualUrl = toActualParamsAndUrl(url, data);
-        config = getDataConfig(defaultConfig, config);
         return httpFunc(actualUrl, data, config)
-          .then(handleSuccess);
+        .then(handleSuccess);
       };
+      
       func.url = function(params) {
-        params = getParams(params, defaultData);
+        params = angular.copy(params);
         return toActualParamsAndUrl(url, params);
       };
-      return func;
+
+      return createRequestFunc(func, defaultParams, defaultConfig);
     };
   };
 
   return {
-    get: function(url, defaultParams, defaultConfig) {
-      var func = function(params, config) {
-        params = getParams(defaultParams, params);
-        var actualUrl = toActualParamsAndUrl(url, params);
-        config = getParamConfig(params, defaultConfig, config);
-        return $http.get(actualUrl, config)
-          .then(handleSuccess);
-      };
-      func.url = function(params) {
-        params = getParams(params, defaultParams);
-        return toActualParamsAndUrl(url, params);
-      };
-      return func;
-    },
-    
+    get: getRequest,
+
     delete: dataRequest($http.delete),
-    
+
     post: dataRequest($http.post),
-    
+
     put: dataRequest($http.put),
-    
-    patch: dataRequest($http.patch),
-    
-    partial: function(requestFunc, addParams, addConfig) {
-      addParams = addParams || {};
-      addConfig = addConfig || {};
-      var func = function(params, config) {
-        params = params || {};
-        config = config || {};
 
-        params = angular.extend(angular.copy(addParams), params);
-        config = angular.extend(angular.copy(addConfig), config);
-        return requestFunc(params, config);
-      };
-      func.url = function(params) {
-        params = getParams(params, addParams);
-        return requestFunc.url(params);
-      };
-      return func;
-    },
-
-    modifyResults: function(requestFunc, modifyFunc) {
-      var func = function(params, config) {
-        return requestFunc(params, config).then(modifyFunc);
-      };
-      func.url = function(params) {
-        return requestFunc.url(params);
-      };
-      return func;
-    }
+    patch: dataRequest($http.patch)
   };
-
 });

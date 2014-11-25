@@ -10,10 +10,10 @@ describe('Module: httpWrapper', function() {
     httpWrapper = _httpWrapper_;
     $httpBackend = $injector.get('$httpBackend');
     getRequestHandler = $httpBackend.when('GET', /[\s\S]*/).respond({
-      mesage: 'hi!'
+      message: 'hi!'
     });
     postRequestHandler = $httpBackend.when('POST', /[\s\S]*/).respond({
-      mesage: 'hi!'
+      message: 'hi!'
     });
   }));
 
@@ -378,47 +378,79 @@ describe('Module: httpWrapper', function() {
 
   it('should successfully transform response data using modifyResults', function() {
     var req = httpWrapper.get('/test');
-    req = httpWrapper.modifyResults(req, function(data) {
+    var req2 = req.modify(function(data) {
       return 'i changed';
     });
+    req2 = req2.modify(function(data) {
+      return data + ' i changed too';
+    });
+    req2().then(function(results) {
+      expect(results).toBe('i changed i changed too');
+    });
     req().then(function(results) {
-      expect(results).toBe('i changed');
+      expect(results.message).toBe('hi!');
     });
     $httpBackend.flush();
   });
 
   it('should give correct url on url method', function() {
     var req = httpWrapper.get('/test');
-    expect(req.url === '/test');
+    expect(req.url()).toBe('/test');
 
     req = httpWrapper.post('/test2');
-    expect(req.url === '/test2');
+    expect(req.url()).toBe('/test2');
 
-    req = httpWrapper.partial(req, {message: 'test'});
-    expect(req.url === '/test2');
+    req = req.partial({message: 'test'});
+    expect(req.url()).toBe('/test2');
 
-    req = httpWrapper.modifyResults(req, function(data) {
+    req = req.modify(function(data) {
       return 'i changed';
     });
-    expect(req.url === '/test2');
+    expect(req.url()).toBe('/test2');
+
 
     req = httpWrapper.get('/test/:message');
-    req = httpWrapper.partial(req, {message: 'test'});
-    expect(req.url === '/test/test');
+    var req2 = req.partial({message: 'test'});
+    expect(req2.url()).toBe('/test/test');
+    expect(req.url()).toBe('/test');
 
     req = httpWrapper.get('/test/:message1/:message2');
-    req = httpWrapper.partial(req, {message1: 'test1', message2:'test2'});
-    req = httpWrapper.partial(req, {message2:'test3'});
-    expect(req.url === '/test/test1/test3');
+    req2 = req.partial({message1: 'test1', message2:'test2'});
+    req2 = req2.partial({message2:'test3'});
+    expect(req2.url()).toBe('/test/test1/test3');
+    expect(req.url()).toBe('/test');
 
-    req = httpWrapper.modifyResults(req, function(data) {
+    req2 = req2.modify(function(data) {
       return 'i changed';
     });
-    expect(req.url === '/test/test1/test3');
+    expect(req2.url()).toBe('/test/test1/test3');
 
-    req = httpWrapper.partial(req, {message2:'test4'});
-    expect(req.url === '/test/test1/test4');
-
+    req = req2.partial({message2:'test4'});
+    expect(req.url()).toBe('/test/test1/test4');
   });
 
+  it ('should have expected hash behavior', function() {
+    var req = httpWrapper.get('/test');
+    var req2 = httpWrapper.get('/test2');
+    var req3 = httpWrapper.get('/test');
+    expect(req.hash()).not.toBe(req2.hash());
+    expect(req.hash()).toBe(req3.hash());
+    var req4 = req.modify(function(results) {
+      return 'abcasdasdas asd asd asdasdasd';
+    });
+    var req5 = req.modify(function(results) {
+      return 'abcasdasdas';
+    });
+    expect(req4.hash()).not.toBe(req5.hash());
+
+    req = httpWrapper.get('/test/:message1/:message2');
+    req2 = req.partial({message1: 'test1', message2:'test2'});
+    req2 = req2.partial({message2:'test3'});
+    req2 = req2.modify(function(data) {
+      return 'i changed';
+    });
+    req = req2.partial({message2:'test4'});
+    expect(req.hash()).not.toBe(req2.hash());
+
+  });
 });
