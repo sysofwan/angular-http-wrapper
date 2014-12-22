@@ -132,7 +132,6 @@ angular.module('sysofwan.httpWrapper', [])
       angular.forEach(modifiers, function(fn) {
         str += fn.toString();
       });
-      console.log(str);
       return hashFunc(str);
     };
     return func;
