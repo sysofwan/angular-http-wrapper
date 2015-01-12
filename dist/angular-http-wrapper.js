@@ -102,6 +102,7 @@ angular.module('sysofwan.httpWrapper', [])
     params = params || {};
     config = config || {};
     modifiers = modifiers || [];
+    var hash;
     var func = function(newparams, newconfig) {
       newparams = angular.extend({}, params, newparams);
       newconfig = angular.extend({}, config, newconfig);
@@ -128,12 +129,14 @@ angular.module('sysofwan.httpWrapper', [])
       return reqFunc.url(params, config);
     };
     func.hash = function() {
-      var str = this.url();
-      angular.forEach(modifiers, function(fn) {
-        str += fn.toString();
-      });
-      console.log(str);
-      return hashFunc(str);
+      if (!hash) {
+        var str = this.url();
+        angular.forEach(modifiers, function(fn) {
+          str += fn.toString();
+        });
+        hash = hashFunc(str);
+      }
+      return hash;
     };
     return func;
   };
