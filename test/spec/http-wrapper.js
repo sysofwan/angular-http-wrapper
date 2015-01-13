@@ -455,3 +455,39 @@ describe('Module: httpWrapper', function() {
   });
 });
 
+describe('Provider tests', function () {
+  var $httpBackend, httpWrapper, getRequestHandler, postRequestHandler, provider;
+
+  // load the controller's module
+  beforeEach(module('sysofwan.httpWrapper', function(httpWrapperProvider) {
+    provider = httpWrapperProvider;
+  }));
+
+  beforeEach(inject(function($injector, _httpWrapper_) {
+    httpWrapper = _httpWrapper_;
+    $httpBackend = $injector.get('$httpBackend');
+    $httpBackend.when('GET', /[\s\S]*/).respond({
+      message: 'hi!'
+    });
+    $httpBackend.when('POST', /[\s\S]*/).respond({
+      message: 'hi!'
+    });
+  }));
+
+  afterEach(function() {
+    $httpBackend.verifyNoOutstandingExpectation();
+    $httpBackend.verifyNoOutstandingRequest();
+  });
+
+  it('should have configurable base url', function() {
+    provider.setBaseUrl('/test/');
+    var req = httpWrapper.get('/');
+    expect(req.url()).toBe('//server/test/');
+    req = httpWrapper.get('test');
+    expect(req.url()).toBe('test');
+    req = httpWrapper.get('//test');
+    expect(req.url()).toBe('//test');
+    req = httpWrapper.get('/test');
+    expect(req.url()).toBe('//server/test/test');
+  });
+});
